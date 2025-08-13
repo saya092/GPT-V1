@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>液態排版夢向網站示範 v14</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&display=swap');
+    html, body { height: 100%; margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Serif TC', serif;
+      background: linear-gradient(120deg, #f2e9e4 0%, #c9ada7 100%);
+      min-height: 100vh;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 210px;
+      height: 100vh;
+      background: #4a4e69ee;
+      box-shadow: 2px 0 12px #22223b22;
+      color: #fff;
+      padding-top: 2.2rem;
+      z-index: 200;
+      transition: transform 0.3s, width 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .sidebar.collapsed {
+      transform: translateX(-100%);
+      width: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .sidebar h2 {
+      font-size: 1.18em;
+      margin: 0 0 1em 1.3em;
+      letter-spacing: 1.5px;
+      color: #f2e9e4;
+      white-space: nowrap;
+    }
+    .sidebar nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2em;
+      margin-left: 1.2em;
+      width: 100%;
+    }
+    .sidebar nav a {
+      color: #f2e9e4;
+      text-decoration: none;
+      padding: 0.5em 0.9em;
+      border-radius: 18px 0 0 18px;
+      font-weight: bold;
+      margin-right: 1.5em;
+      transition: background 0.2s, color 0.2s;
+      display: block;
+      width: 83%;
+      box-sizing: border-box;
+    }
+    .sidebar nav a.active, .sidebar nav a:hover {
+      background: #c9ada7;
+      color: #22223b;
+    }
+    .toggle-btn {
+      position: fixed;
+      top: 1.5em;
+      left: 222px;
+      z-index: 210;
+      width: 32px;
+      height: 32px;
+      background: #c9ada7;
+      border-radius: 50%;
+      border: none;
+      box-shadow: 0 2px 8px #22223b33;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: left 0.3s;
+    }
+    .sidebar.collapsed + .toggle-btn {
+      left: 10px;
+    }
+    .toggle-btn:active { background: #9a8c98; }
+    .toggle-btn svg { width: 22px; height: 22px; fill: #4a4e69; transition: transform 0.3s; }
+    .toggle-btn .arrow.collapsed {
+      transform: rotate(180deg);
+    }
+    .toggle-btn .arrow.expanded {
+      transform: rotate(0deg);
+    }
+    .lang-switcher {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      z-index: 9999;
+      background: #f2e9e4;
+      color: #4a4e69;
+      border-radius: 14px;
+      padding: 0.45em 1.25em;
+      box-shadow: 0 2px 8px #22223b22;
+      font-size: 1.08em;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
+      transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+      outline: none;
+      min-width: 72px;
+      opacity: 0.96;
+      pointer-events: auto;
+    }
+    .lang-switcher:active, .lang-switcher:focus {
+      background: #c9ada7;
+      color: #fff;
+      box-shadow: 0 4px 16px #22223b33;
+    }
+    @media (max-width: 600px) {
+      .lang-switcher {
+        bottom: 10px;
+        right: 8px;
+        font-size: 1em;
+        padding: 0.38em 1em;
+        min-width: 60px;
+      }
+    }
+    .fluid-container {
+      display: flex;
+      min-height: 100vh;
+      align-items: flex-start;
+      transition: margin 0.3s;
+    }
+    .fluid-container.with-sidebar { margin-left: 210px; }
+    .fluid-container.no-sidebar { margin-left: 0; }
+    .main-wrap-align {
+      display: flex;
+      width: 100%;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      transition: all 0.3s;
+    }
+    .main-content {
+      max-width: 860px;
+      min-width: 290px;
+      padding: 2.2rem 2.5rem 2.5rem 2.5rem;
+      background: #fffdfaee;
+      border-radius: 20px;
+      box-shadow: 0 8px 32px #22223b22;
+      margin: 2.5vh 1vw 2vh 1vw;
+      flex: 1 1 860px;
+      transition: margin 0.3s;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .toolsbar {
+      width: 300px;
+      min-width: 200px;
+      max-width: 380px;
+      background: #f2e9e4e8;
+      border-radius: 20px;
+      box-shadow: 0 4px 18px #22223b21;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 1.1em 1.4em 1.3em 1.4em;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2em;
+      position: sticky;
+      top: 2em;
+      z-index: 3;
+      margin: 2.5vh 2vw 2vh 2vw;
+      transition: all 0.3s;
+    }
+    .toolsbar.hide { display:none !important; }
+    .toolsbar-row {
+      display: flex;
+      flex-direction: row;
+      gap: 2.2em;
+      margin: 2.5vh 2vw 2vh 2vw;
+      transition: all 0.3s;
+    }
+    .toolsbar-row .toolsbar {
+      margin: 0;
+      position: static;
+      top: auto;
+    }
+    .tool-card {
+      background: #fffdfaee;
+      box-shadow: 0 2px 8px #22223b22;
+      border-radius: 14px;
+      padding: 1em 0.7em 1em 0.7em;
+      margin: 0;
+      font-size: 0.99em;
+      box-sizing: border-box;
+      word-break: break-all;
+    }
+    .tool-card h3 {
+      font-size: 1.02em;
+      margin: 0 0 0.6em 0;
+      color: #4a4e69;
+      letter-spacing: 1px;
+      font-weight: bold;
+      text-align: center;
+    }
+    .tool-card table {
+      width: 100%;
+      table-layout: fixed;
+      border-collapse: collapse;
+      font-size: 1em;
+      margin: 0.5em 0;
+    }
+    .tool-card th, .tool-card td {
+      border: 1px solid #c9ada7;
+      text-align: center;
+      padding: 0.4em 0;
+      height: 2.1em;
+      vertical-align: middle;
+      width: calc(100% / 7);
+      box-sizing: border-box;
+      background: #fffdfaee;
+    }
+    .tool-card th { background: #ede4d5; color: #4a4e69; font-weight: bold; }
+    .tool-card td.today {
+      background: #c9ada7 !important;
+      color: #fff !important;
+      font-weight: bold;
+      border-radius: 7px;
+    }
+    #toolQuote #quoteArea {
+      text-align: center;
+    }
+    .tool-card .center-btn-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 0.3em;
+      margin-top: 0.1em;
+    }
+    #fortuneResult,
+    #signStatus {
+      text-align: center !important;
+    }
+    .focus-timer-outer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3em;
+      margin-bottom: 0.3em;
+    }
+    .focus-timer-inputs {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 0.35em;
+      margin-bottom: 0.2em;
+      width: 100%;
+    }
+    .focus-timer-inputs input {
+      width: 4.2em;
+      min-width: 4.2em;
+      max-width: 5em;
+      text-align: center;
+      font-size: 1em;
+      margin: 0 0.05em;
+      padding: 0.25em 0.2em;
+      border-radius: 8px;
+      border: 1px solid #c9ada7;
+      background: #f9f6f2;
+      color: #4a4e69;
+      box-sizing: border-box;
+      font-family: inherit;
+      letter-spacing: 1.5px;
+    }
+    .focus-timer-label {
+      margin: 0 0.12em 0 0.06em;
+      font-size: 0.97em;
+      color: #4a4e69;
+      width: 1.7em;
+      text-align: center;
+      display: inline-block;
+    }
+    .focus-timer-btns {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5em;
+      margin-top: 0.2em;
+      margin-bottom: 0.1em;
+      width: 100%;
+    }
+    .focus-timer-btns .mini-btn {
+      min-width: 56px;
+      display: inline-block;
+    }
+    #timerShow {
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+      font-size: 1.15em;
+      color: #4a4e69;
+      font-weight: bold;
+      margin-top: 0.4em;
+      letter-spacing: 0.07em;
+      min-width: 10em;
+    }
+    .align-bar {
+      text-align: right;
+      margin: 2.3rem 2.5vw 1.2em 0;
+      padding-left: 210px;
+      transition: padding-left 0.3s;
+    }
+    .align-bar.no-sidebar {padding-left:0;}
+    .align-bar button {
+      background: #c9ada7;
+      color: #4a4e69;
+      border: none;
+      border-radius: 14px;
+      padding: 0.5em 1.1em;
+      margin-left: 0.4em;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.18s, color 0.18s;
+      outline: none;
+    }
+    .align-bar button.active,
+    .align-bar button:hover {
+      background: #4a4e69;
+      color: #fff;
+    }
+    .mini-btn {
+      background: #c9ada7;
+      color: #4a4e69;
+      border-radius: 10px;
+      border: none;
+      padding: 0.4em 0.8em;
+      margin-top:0.4em;
+      margin-bottom:0.2em;
+      cursor: pointer;
+      font-size:0.97em;
+      transition: background 0.18s, color 0.18s;
+    }
+    .mini-btn:hover { background: #4a4e69; color: #fff; }
+    .tool-card input, .tool-card select {
+      font-size: 1em;
+      border-radius: 8px;
+      border: 1px solid #c9ada7;
+      padding: 0.3em 0.7em;
+      margin: 0.2em 0;
+      width: 90%;
+      box-sizing: border-box;
+    }
+    header {
+      text-align: center;
+      padding: 1.5rem 0 1rem 0;
+      background: #4a4e69cc;
+      color: #fff;
+      letter-spacing: 2px;
+      border-radius: 0 0 18px 18px;
+      margin-bottom: 2rem;
+    }
+    h2 {
+      color: #4a4e69;
+      border-left: 6px solid #c9ada7;
+      padding-left: 0.7em;
+      margin-top:2em;
+    }
+    .profile-img {
+      width: 120px; height: 120px; border-radius: 50%; border: 4px solid #c9ada7; object-fit: cover; margin-bottom: 1em; display: block; margin-left: auto; margin-right: auto;
+    }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-top: 1em;}
+    .gallery img { width: 100%; border-radius: 14px; box-shadow: 0 2px 10px #4a4e6933; transition: transform 0.2s; object-fit: cover; height: 110px;}
+    .gallery img:hover { transform: scale(1.07);}
+    .about-list { list-style: disc inside; margin-left: 1em;}
+    .dream-table { width: 100%; border-collapse: collapse; margin: 1em 0;}
+    .dream-table th, .dream-table td { border: 1px solid #c9ada7; padding: 0.7em; text-align: center;}
+    .dream-table th { background: #c9ada7; color: #fff;}
+    .footer { text-align: center; color: #4a4e69; background: #f2e9e4; margin-top: 2em; padding: 1.5em 0 0.3em 0; font-size: 0.95em; border-top: 1px solid #c9ada7;}
+    .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 14px; margin-top: 1em; box-shadow: 0 2px 12px #22223b33;}
+    .video-container iframe { position: absolute; top:0; left: 0; width: 100%; height: 100%; border: none; border-radius: 14px;}
+    ::-webkit-scrollbar {width:9px;}
+    ::-webkit-scrollbar-thumb {background:#c9ada7;border-radius:7px;}
+    ::-webkit-scrollbar-track {background:transparent;}
+    @media (max-width: 1200px) {
+      .toolsbar, .toolsbar-row .toolsbar {width: 180px; min-width:100px; font-size:0.95em;}
+      .main-content {padding:2.2rem 1vw;}
+      .sidebar {width:170px;}
+      .sidebar nav a {width: 92%;}
+      .align-bar {padding-left: 170px;}
+      .fluid-container.with-sidebar {margin-left: 170px;}
+      .toggle-btn { left: 182px; }
+    }
+    @media (max-width: 1000px) {
+      .sidebar {display:none;}
+      .fluid-container {margin-left:0;}
+      .align-bar, .fluid-container {padding-left:0;}
+      .toggle-btn {left:10px;}
+      .toolsbar, .toolsbar-row .toolsbar {width: 98vw; min-width: 80vw; max-width: 99vw; padding:1em 2vw;}
+      .toolsbar-row {gap: 2vw;}
+    }
+    @media (max-width: 900px) {
+      .fluid-container {flex-direction: column !important;}
+      .main-wrap-align {flex-direction: column !important;}
+      .toolsbar, .toolsbar-row, .toolsbar-row .toolsbar {width: 96vw; max-width: 99vw; height: auto; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; overflow-y: visible; padding: 0.4em 1vw; margin: 1.2vw auto;}
+      .toolsbar .tool-card, .toolsbar-row .toolsbar .tool-card {min-width:158px; max-width:220px; margin:0 0.5em;}
+      .main-content {margin:0 auto;}
+      .sidebar {display:none;}
+      .align-bar {padding-left:0;}
+    }
+    @media (max-width: 600px) {
+      .main-content {padding:1em 0.5em;}
+      .toolsbar .tool-card, .toolsbar-row .toolsbar .tool-card {min-width:130px; font-size:0.91em;}
+      h2 {font-size: 1.1em;}
+      header {padding:0.8em 0 0.7em 0;}
+      .focus-timer-btns { gap: 0.35em; }
+      .focus-timer-inputs input {
+        width: 4em;
+        min-width: 4em;
+        max-width: 5em;
+        font-size: 1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 語言切換，移動到底部右下角 -->
+  <button class="lang-switcher" id="langSwitcher" title="Switch Language">EN</button>
+  <!-- 側邊目錄 -->
+  <div class="sidebar" id="sidebar">
+    <h2 data-i18n="menu">網站目錄</h2>
+    <nav>
+      <a href="#about" id="nav-about" data-i18n="about">關於我</a>
+      <a href="#gallery" id="nav-gallery" data-i18n="gallery">夢向畫廊</a>
+      <a href="#dreams" id="nav-dreams" data-i18n="dreams">夢向記錄</a>
+      <a href="#fav" id="nav-fav" data-i18n="fav">推し收藏</a>
+      <a href="#contact" id="nav-contact" data-i18n="contact">聯絡我</a>
+      <!-- 修正點：加上 data-i18n="top" -->
+      <a href="#top" id="nav-top" data-i18n="top">⇧ 回到頂部</a>
+    </nav>
+  </div>
+  <button class="toggle-btn" id="toggleBtn" title="收合/展開目錄">
+    <svg class="arrow expanded" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+  </button>
+  <div class="align-bar" id="alignBar">
+    <button id="leftBtn" title="靠左對齊" data-i18n="left">左對齊</button>
+    <button id="centerBtn" class="active" title="置中對齊" data-i18n="center">置中</button>
+    <button id="rightBtn" title="靠右對齊" data-i18n="right">右對齊</button>
+  </div>
+  <div class="fluid-container with-sidebar" id="fluidContainer">
+    <div class="main-wrap-align center" id="mainWrapAlign">
+      <!-- 左側小工具 -->
+      <div class="toolsbar" id="leftTools">
+        <div class="tool-card" id="toolQuote">
+          <h3 data-i18n="quote_title">夢向語錄</h3>
+          <div id="quoteArea" data-i18n-quote>「夢是與推共度的專屬時光。」</div>
+        </div>
+        <div class="tool-card">
+          <h3 data-i18n="fortune_title">今日占卜</h3>
+          <div class="center-btn-box">
+            <!-- 已有 data-i18n="draw"；只需補 i18n 鍵 -->
+            <button class="mini-btn" onclick="drawFortune()" data-i18n="draw">抽一籤</button>
+          </div>
+          <div id="fortuneResult" style="margin-top:0.6em;color:#9a8c98;font-weight:bold;"></div>
+        </div>
+        <div class="tool-card">
+          <h3 data-i18n="timer_title">專注計時</h3>
+          <div class="focus-timer-outer">
+            <div class="focus-timer-inputs">
+              <input id="timerHour" type="number" min="0" max="9999" value="00" maxlength="4" inputmode="numeric" autocomplete="off">
+              <span class="focus-timer-label">時</span>
+              <input id="timerMin" type="number" min="0" max="59" value="00" maxlength="2" inputmode="numeric" autocomplete="off">
+              <span class="focus-timer-label">分</span>
+              <input id="timerSec" type="number" min="0" max="59" value="00" maxlength="2" inputmode="numeric" autocomplete="off">
+              <span class="focus-timer-label">秒</span>
+            </div>
+            <div class="focus-timer-btns">
+              <button class="mini-btn" id="focusStartBtn" onclick="startTimer()" data-i18n="start">開始</button>
+              <button class="mini-btn" id="focusPauseBtn" onclick="pauseTimer()" data-i18n="pause">暫停</button>
+              <button class="mini-btn" id="focusClearBtn" onclick="clearTimerInputs()" data-i18n="clear">清除</button>
+            </div>
+          </div>
+          <div id="timerShow">00:00:00</div>
+        </div>
+      </div>
+      <!-- 主內容 -->
+      <div class="main-content" id="mainContent">
+        <header>
+          <h1 data-i18n="main_title">里維夢女の夢向專屬空間</h1>
+          <div data-i18n="main_desc">歡迎來到我的夢向世界！這裡紀錄我的夢女故事、寫作、繪圖、心情與推し的美好時光。</div>
+        </header>
+        <section id="about">
+          <h2 data-i18n="about">關於我</h2>
+          <img src="https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=facearea&w=256&q=80" class="profile-img" alt="我的頭像">
+          <ul class="about-list" id="aboutList">
+            <li data-i18n="nick">暱稱：SAYA</li>
+            <li data-i18n="oshi">推し：里維（進擊的巨人）</li>
+            <li data-i18n="hobby">興趣：繪畫、寫作、二創、夢女腦補、收集推圖</li>
+            <li data-i18n="slogan">「夢」是我與推し之間最幸福的小宇宙 💕</li>
+            <li data-i18n="warn">網站內容大多為自我創作與腦內補完，請勿轉載～</li>
+          </ul>
+        </section>
+        <section id="gallery">
+          <h2 data-i18n="gallery">夢向畫廊</h2>
+          <div class="gallery">
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="夢像畫1">
+            <img src="https://images.unsplash.com/photo-1465101178521-c1a9136a3fd8?auto=format&fit=crop&w=400&q=80" alt="夢像畫2">
+            <img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=400&q=80" alt="夢像畫3">
+            <img src="https://images.unsplash.com/photo-1519985176271-adb1088fa94c?auto=format&fit=crop&w=400&q=80" alt="夢像畫4">
+          </div>
+          <div style="margin-top:1em; text-align:center; font-size:0.95em; color:#9a8c98;" data-i18n="gallery_warn">* 圖片為示意，未來可自行換成自己的創作或收藏 *</div>
+        </section>
+        <section id="dreams">
+          <h2 data-i18n="dreams">夢向記錄</h2>
+          <table class="dream-table" id="dreamTable">
+            <thead>
+              <tr>
+                <th data-i18n="dream_title">標題</th>
+                <th data-i18n="dream_date">日期</th>
+                <th data-i18n="dream_mood">心情</th>
+                <th data-i18n="dream_summary">內容簡述</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-i18n="dream1_title">初遇里維</td>
+                <td>2023-07-15</td>
+                <td>🥰</td>
+                <td data-i18n="dream1_desc">在夢中巧遇里維隊長，搭話互動，讓我整天都心花怒放！</td>
+              </tr>
+              <tr>
+                <td data-i18n="dream2_title">夢裡約會</td>
+                <td>2024-02-11</td>
+                <td>💖</td>
+                <td data-i18n="dream2_desc">和推し一起逛街、吃甜點，被細心溫柔的舉動融化。</td>
+              </tr>
+              <tr>
+                <td data-i18n="dream3_title">並肩作戰</td>
+                <td>2024-06-30</td>
+                <td>🔥</td>
+                <td data-i18n="dream3_desc">與里維共同對抗巨人，感受到信任與守護的力量！</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="font-size:0.95em; color:#4a4e69;" data-i18n="dreams_hint">* 可自行新增夢女記事，記錄每段與推し的甜蜜回憶 *</div>
+        </section>
+        <section id="fav">
+          <h2 data-i18n="fav">推し收藏</h2>
+          <div class="gallery">
+            <img src="https://i.imgur.com/6XGQ8t4.jpg" alt="推圖1">
+            <img src="https://i.imgur.com/LNw2c0V.jpg" alt="推圖2">
+            <img src="https://i.imgur.com/6jZV3S2.jpg" alt="推圖3">
+            <img src="https://i.imgur.com/8Km9tLL.jpg" alt="推圖4">
+          </div>
+          <div class="video-container">
+            <iframe src="https://www.youtube.com/embed/1HzT7VcsG9Q" title="里維 AMV" allowfullscreen></iframe>
+          </div>
+          <div style="font-size:0.93em; color:#9a8c98; text-align:center; margin-top:0.8em;" data-i18n="fav_hint">
+            * 收藏推圖、影片可隨心更換，這裡只是示意 *
+          </div>
+        </section>
+        <section id="contact">
+          <h2 data-i18n="contact">聯絡我</h2>
+          <div style="text-align:center; margin-bottom:1em;">
+            <p data-i18n="contact_p1">如果想交流夢向心得、繪圖文或合作，歡迎寫信或在社群留言！</p>
+            <p>
+              ✉️ Email：<a href="mailto:yourmail@example.com">yourmail@example.com</a><br>
+              💬 IG：<a href="https://instagram.com/" target="_blank">@your_ig</a> <br>
+              📝 Plurk：<a href="https://www.plurk.com/" target="_blank">@your_plurk</a>
+            </p>
+            <p style="color:#9a8c98;font-size:0.93em;" data-i18n="contact_hint">* 以上資訊請自行編輯成你的聯絡方式 *</p>
+          </div>
+        </section>
+        <div class="footer" data-i18n="footer">
+          &copy; 2025 SAYA | 夢女向個人網站<br>
+          本頁面僅供夢女同好自創、記錄使用，網站內容如有侵權請來信告知。
+        </div>
+      </div>
+      <!-- 右側小工具 -->
+      <div class="toolsbar" id="rightTools">
+        <div class="tool-card">
+          <h3 data-i18n="card_title">夢女抽卡</h3>
+          <div class="center-btn-box">
+            <button class="mini-btn" onclick="drawCard()" data-i18n="draw_card">抽一張</button>
+          </div>
+          <div id="cardResult" style="margin-top:0.6em;text-align:center;font-weight:bold;color:#4a4e69;"></div>
+        </div>
+        <div class="tool-card">
+          <h3 data-i18n="calendar_title">簡易日曆</h3>
+          <div id="calendarArea" style="text-align:center;"></div>
+        </div>
+        <div class="tool-card">
+          <h3 data-i18n="sign_title">每日打卡</h3>
+          <div class="center-btn-box">
+            <button class="mini-btn" onclick="dailySign()" data-i18n="sign">打卡！</button>
+          </div>
+          <div id="signStatus" style="margin-top:0.4em;font-size:1em;color:#9a8c98;font-weight:bold;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // 側邊欄收合功能
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const arrow = toggleBtn.querySelector('.arrow');
+    const fluidContainer = document.getElementById('fluidContainer');
+    const alignBar = document.getElementById('alignBar');
+    function setSidebarState(collapsed) {
+      if(collapsed) {
+        sidebar.classList.add('collapsed');
+        fluidContainer.classList.remove('with-sidebar');
+        fluidContainer.classList.add('no-sidebar');
+        alignBar.classList.add('no-sidebar');
+        arrow.classList.remove('expanded');
+        arrow.classList.add('collapsed');
+      } else {
+        sidebar.classList.remove('collapsed');
+        fluidContainer.classList.add('with-sidebar');
+        fluidContainer.classList.remove('no-sidebar');
+        alignBar.classList.remove('no-sidebar');
+        arrow.classList.remove('collapsed');
+        arrow.classList.add('expanded');
+      }
+    }
+    toggleBtn.addEventListener('click', () => {
+      setSidebarState(!sidebar.classList.contains('collapsed'));
+    });
+    if(window.innerWidth < 1000) setSidebarState(true);
+
+    // 目錄高亮
+    function highlightNav() {
+      const sections = ['about','gallery','dreams','fav','contact'];
+      let scrollPos = window.scrollY || window.pageYOffset;
+      let found = false;
+      for(let i=sections.length-1;i>=0;i--){
+        let section = document.getElementById(sections[i]);
+        if(section && section.offsetTop-90 <= scrollPos){
+          document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.remove('active'));
+          let nav = document.getElementById('nav-'+sections[i]);
+          if(nav) nav.classList.add('active');
+          found = true; break;
+        }
+      }
+      if(!found){
+        document.querySelectorAll('.sidebar nav a').forEach(a=>a.classList.remove('active'));
+      }
+    }
+    window.addEventListener('scroll', highlightNav);
+    window.addEventListener('DOMContentLoaded', highlightNav);
+    window.addEventListener('resize', ()=>{
+      if(window.innerWidth<1000) setSidebarState(true);
+      else setSidebarState(false);
+    });
+
+    // 語錄隨機
+    const quotes = [
+      "「夢是與推共度的專屬時光。」",
+      "「和推子的每一個平行世界，都值得細細收藏。」",
+      "「夢裡見，現實裡也要幸福。」",
+      "「推是我的宇宙中心。」",
+      "「夢女腦內劇場永遠不會停播！」",
+      "「因為有你，夢才這麼美好。」"
+    ];
+    const quotes_en = [
+      "“A dream is exclusive time spent with my beloved.”",
+      "“Every parallel world with my oshimen is worth treasuring.”",
+      "“See you in dreams, wishing you happiness in reality too.”",
+      "“My oshimen is the center of my universe.”",
+      "“The dream-girl's brain theater never stops!”",
+      "“Because of you, dreams are so beautiful.”"
+    ];
+    function setRandomQuote(){
+      const lang = getLang();
+      const arr = lang==="en"?quotes_en:quotes;
+      document.getElementById('quoteArea').textContent = arr[Math.floor(Math.random()*arr.length)];
+    }
+    setRandomQuote();
+    setInterval(setRandomQuote, 7000);
+
+    // 今日占卜
+    const fortunes = [
+      "大吉：推會在夢裡等你！",
+      "中吉：推子會有驚喜舉動！",
+      "小吉：今天適合發夢向文！",
+      "末吉：偶爾也要多關心自己。",
+      "平：推在遠方默默守護～",
+      "凶：推子偷懶中…多愛自己一點！"
+    ];
+    const fortunes_en = [
+      "Super Lucky: Your oshimen will wait for you in your dream!",
+      "Lucky: Your oshimen will do something surprising!",
+      "A Little Luck: Today is great for posting dream stories!",
+      "Slight Luck: Remember to care for yourself sometimes.",
+      "Average: Your oshimen is watching over you from afar~",
+      "Unlucky: Your oshimen is slacking… love yourself more!"
+    ];
+    let fortuneLang = getLang(); // 新增：追蹤語言狀態
+    function drawFortune() {
+      fortuneLang = getLang(); // 記錄當下語言
+      const arr = fortuneLang==="en"?fortunes_en:fortunes;
+      const idx = Math.floor(Math.random()*arr.length);
+      var el = document.getElementById('fortuneResult');
+      el.textContent = arr[idx];
+      el.setAttribute('data-fortune-idx', idx); // 記錄內容索引
+      el.setAttribute('data-fortune-lang', fortuneLang); // 記錄語言
+      el.style.textAlign = "center";
+    }
+    // 語言切換時同步更新今日占卜內容
+    function updateFortuneResultLang() {
+      var el = document.getElementById('fortuneResult');
+      var idx = el.getAttribute('data-fortune-idx');
+      if(idx!==null) {
+        var lang = getLang();
+        var arr = lang==="en"?fortunes_en:fortunes;
+        el.textContent = arr[idx];
+        el.setAttribute('data-fortune-lang', lang);
+        el.style.textAlign = "center";
+      }
+    }
+
+    // ====== 夢女抽卡 ======
+    const cards = [
+      {name:"SSR 夢之邂逅", desc:"今晚推會入夢哦～", emoji:"✨"},
+      {name:"SR 甜蜜約會", desc:"和推一起吃甜點！", emoji:"🍰"},
+      {name:"SR 並肩作戰", desc:"推會保護你！", emoji:"🗡️"},
+      {name:"R 鼓勵信", desc:"推偷偷寫信給你", emoji:"💌"},
+      {name:"R 友情之光", desc:"有朋友陪伴也是幸福", emoji:"🌈"},
+      {name:"N 微笑打氣", desc:"推向你微笑～", emoji:"😊"},
+    ];
+    const cards_en = [
+      {name:"SSR Dream Encounter", desc:"Tonight your oshimen will appear in your dream~", emoji:"✨"},
+      {name:"SR Sweet Date", desc:"Enjoying desserts with your oshimen!", emoji:"🍰"},
+      {name:"SR Fighting Together", desc:"Your oshimen will protect you!", emoji:"🗡️"},
+      {name:"R Encouragement Letter", desc:"Your oshimen secretly writes you a letter", emoji:"💌"},
+      {name:"R Light of Friendship", desc:"It's a blessing to have friends' support", emoji:"🌈"},
+      {name:"N Cheerful Smile", desc:"Your oshimen smiles at you~", emoji:"😊"},
+    ];
+    let cardLang = getLang();
+    function drawCard() {
+      cardLang = getLang();
+      let arr = cardLang==="en"?cards_en:cards;
+      let idx = Math.floor(Math.random()*arr.length);
+      let card = arr[idx];
+      let el = document.getElementById('cardResult');
+      el.innerHTML = card.emoji+" <b>"+card.name+"</b><br><small>"+card.desc+"</small>";
+      el.setAttribute('data-card-idx', idx);
+      el.setAttribute('data-card-lang', cardLang);
+    }
+    // 語言切換時同步更新抽卡內容
+    function updateCardResultLang() {
+      let el = document.getElementById('cardResult');
+      let idx = el.getAttribute('data-card-idx');
+      if(idx!==null) {
+        let lang = getLang();
+        let arr = lang==="en"?cards_en:cards;
+        let card = arr[idx];
+        el.innerHTML = card.emoji+" <b>"+card.name+"</b><br><small>"+card.desc+"</small>";
+        el.setAttribute('data-card-lang', lang);
+      }
+    }
+
+    // ====== 專注計時(時分秒) ======
+    let timer = null, timerCount = 0, timerPaused = false;
+    function pad(num, len=2) {
+      num = Number(num);
+      let s = num.toString();
+      while(s.length < len) s = "0" + s;
+      return s;
+    }
+    function getTimerInputValue(id, max, def) {
+      let v = document.getElementById(id).value;
+      if (v == null || v === "") return def;
+      v = v.replace(/^0+/, '') || "0";
+      v = Math.max(0, Math.min(parseInt(v), max));
+      return v;
+    }
+    function updateTimerInputsDisplay() {
+      ['timerHour','timerMin','timerSec'].forEach((id, i) => {
+        let el = document.getElementById(id);
+        let val = el.value;
+        if(val === "" || isNaN(Number(val))) el.value = "00";
+        else el.value = pad(Number(val), id==='timerHour'?2:2);
+      });
+    }
+    function startTimer() {
+      if(timer) clearInterval(timer);
+      timerPaused = false;
+      let hour = getTimerInputValue('timerHour', 9999, 0);
+      let min = getTimerInputValue('timerMin', 59, 0);
+      let sec = getTimerInputValue('timerSec', 59, 0);
+      let total = hour*3600 + min*60 + sec;
+      if(total <= 0) {
+        showTimer(0);
+        return;
+      }
+      timerCount = total;
+      showTimer();
+      timer = setInterval(()=>{
+        if(timerPaused) return;
+        timerCount--;
+        showTimer();
+        if(timerCount<=0) {
+          clearInterval(timer);
+          showTimer(0);
+          document.getElementById('timerShow').textContent = getLang()==="en" ? "Done!" : "完成！";
+          document.getElementById('timerShow').style.textAlign = "center";
+          alert(getLang()==="en" ? "Time's up!" : "時間到！");
+        }
+      },1000);
+    }
+    function pauseTimer() {
+      if(!timer) return;
+      timerPaused = !timerPaused;
+      var pauseBtn = document.getElementById('focusPauseBtn');
+      if (timerPaused)
+        pauseBtn.textContent = getLang()==="en" ? "Resume" : "繼續";
+      else
+        pauseBtn.textContent = getLang()==="en" ? "Pause" : "暫停";
+    }
+    function showTimer(val) {
+      let cnt = typeof(val)==="number"?val:timerCount;
+      cnt = Math.max(0, cnt);
+      let h = Math.floor(cnt/3600);
+      let m = Math.floor((cnt%3600)/60);
+      let s = cnt%60;
+      document.getElementById('timerShow').textContent = pad(h,2)+":"+pad(m,2)+":"+pad(s,2);
+      document.getElementById('timerShow').style.textAlign = "center";
+    }
+    function clearTimerInputs() {
+      document.getElementById('timerHour').value = "";
+      document.getElementById('timerMin').value = "";
+      document.getElementById('timerSec').value = "";
+      updateTimerInputsDisplay();
+      if(timer) clearInterval(timer);
+      timer = null;
+      timerPaused = false;
+      timerCount = 0;
+      showTimer(0);
+      var pauseBtn = document.getElementById('focusPauseBtn');
+      pauseBtn.textContent = getLang()==="en" ? "Pause" : "暫停";
+    }
+    ['timerHour','timerMin','timerSec'].forEach(function(id){
+      document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById(id).addEventListener('blur', updateTimerInputsDisplay);
+        document.getElementById(id).addEventListener('input', function(e){
+          let v = e.target.value.replace(/\D/g,'');
+          if (id==='timerHour') {
+            if(v.length > 4) v = v.slice(0,4);
+            if(Number(v)>9999) v = "9999";
+          } else {
+            if(v.length > 2) v = v.slice(0,2);
+            if(Number(v)>59) v = "59";
+          }
+          e.target.value = v;
+        });
+      });
+    });
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('timerHour').value = "00";
+      document.getElementById('timerMin').value = "00";
+      document.getElementById('timerSec').value = "00";
+      showTimer(0);
+    });
+
+    // 小日曆
+    function makeCalendar(){
+      let d = new Date(), y = d.getFullYear(), m = d.getMonth();
+      let first = new Date(y, m, 1).getDay(), days = new Date(y, m+1, 0).getDate();
+      let lang = getLang();
+      let week = lang==="en"
+        ? ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
+        : ["日","一","二","三","四","五","六"];
+      let html = "<table><tr>";
+      for(let i=0;i<7;i++) html += "<th>"+week[i]+"</th>";
+      html += "</tr><tr>";
+      let cnt = 0;
+      for(let i=0;i<first;i++){ html+="<td></td>"; cnt++; }
+      for(let d1=1;d1<=days;d1++){
+        let isToday = d1===d.getDate();
+        html += '<td'+(isToday?' class="today"':'')+'>'+d1+'</td>';
+        cnt++;
+        if(cnt%7===0 && d1!==days) html+="</tr><tr>";
+      }
+      for(let i=cnt%7;i<7 && i!==0;i++){ html+="<td></td>"; }
+      html+="</tr></table>";
+      document.getElementById('calendarArea').innerHTML=html;
+    }
+    makeCalendar();
+
+    // 每日打卡
+    function dailySign(){
+      let d = new Date(), key = "dreamsign-"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+      localStorage.setItem(key, "1");
+      showSignStatus();
+    }
+    function showSignStatus(){
+      let d = new Date(), key = "dreamsign-"+d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+      let lang = getLang();
+      var el = document.getElementById('signStatus');
+      if(localStorage.getItem(key))
+        el.textContent = lang==="en"
+          ? "Checked in! Your oshimen gives you a thumbs up 👍"
+          : "已打卡！推子給你一個讚👍";
+      else
+        el.textContent = lang==="en"
+          ? "Not checked in today yet!"
+          : "今日尚未打卡！";
+      el.style.textAlign = "center";
+    }
+    showSignStatus();
+
+    // 合併並排主邏輯
+    const leftTools = document.getElementById('leftTools');
+    const rightTools = document.getElementById('rightTools');
+    const mainWrapAlign = document.getElementById('mainWrapAlign');
+    const mainContent = document.getElementById('mainContent');
+    const leftBtn   = document.getElementById('leftBtn');
+    const centerBtn = document.getElementById('centerBtn');
+    const rightBtn  = document.getElementById('rightBtn');
+
+    let toolsbarRow = null;
+
+    function setAlign(align) {
+      mainWrapAlign.classList.remove('left','center','right');
+      leftBtn.classList.remove('active');
+      centerBtn.classList.remove('active');
+      rightBtn.classList.remove('active');
+
+      if(toolsbarRow) {
+        if(toolsbarRow.contains(leftTools)) mainWrapAlign.appendChild(leftTools);
+        if(toolsbarRow.contains(rightTools)) mainWrapAlign.appendChild(rightTools);
+        mainWrapAlign.removeChild(toolsbarRow);
+        toolsbarRow = null;
+      }
+      if(mainWrapAlign.children[0] !== leftTools) mainWrapAlign.insertBefore(leftTools, mainWrapAlign.firstChild);
+      if(mainWrapAlign.children[1] !== mainContent) mainWrapAlign.insertBefore(mainContent, leftTools.nextSibling);
+      if(mainWrapAlign.children[2] !== rightTools) mainWrapAlign.insertBefore(rightTools, mainContent.nextSibling);
+
+      leftTools.classList.remove('hide');
+      rightTools.classList.remove('hide');
+      leftTools.classList.remove('toolsbar-row');
+      rightTools.classList.remove('toolsbar-row');
+
+      if(align === 'center'){
+        mainWrapAlign.classList.add('center');
+        centerBtn.classList.add('active');
+        leftTools.classList.remove('hide');
+        rightTools.classList.remove('hide');
+      }
+      else if(align === 'left'){
+        mainWrapAlign.classList.add('left');
+        leftBtn.classList.add('active');
+        leftTools.classList.remove('hide');
+        rightTools.classList.remove('hide');
+        toolsbarRow = document.createElement('div');
+        toolsbarRow.className = 'toolsbar-row';
+        toolsbarRow.appendChild(rightTools);
+        toolsbarRow.appendChild(leftTools);
+        mainWrapAlign.appendChild(toolsbarRow);
+      }
+      else if(align === 'right'){
+        mainWrapAlign.classList.add('right');
+        rightBtn.classList.add('active');
+        leftTools.classList.remove('hide');
+        rightTools.classList.remove('hide');
+        toolsbarRow = document.createElement('div');
+        toolsbarRow.className = 'toolsbar-row';
+        toolsbarRow.appendChild(leftTools);
+        toolsbarRow.appendChild(rightTools);
+        mainWrapAlign.insertBefore(toolsbarRow, mainContent);
+      }
+    }
+    leftBtn.addEventListener('click', ()=>setAlign('left'));
+    centerBtn.addEventListener('click', ()=>setAlign('center'));
+    rightBtn.addEventListener('click', ()=>setAlign('right'));
+    setAlign('center');
+
+    // ====== 語言切換系統 ======
+    const i18n = {
+      "zh": {
+        // 修正點：補上 draw / top
+        draw: "抽一籤",
+        top: "⇧ 回到頂部",
+
+        menu: "網站目錄",
+        about: "關於我",
+        gallery: "夢向畫廊",
+        dreams: "夢向記錄",
+        fav: "推し收藏",
+        contact: "聯絡我",
+        left: "左對齊",
+        center: "置中",
+        right: "右對齊",
+        quote_title: "夢向語錄",
+        fortune_title: "今日占卜",
+        timer_title: "專注計時",
+        minute: "分",
+        start: "開始",
+        pause: "暫停",
+        clear: "清除",
+        main_title: "里維夢女の夢向專屬空間",
+        main_desc: "歡迎來到我的夢向世界！這裡紀錄我的夢女故事、寫作、繪圖、心情與推し的美好時光。",
+        nick: "暱稱：SAYA",
+        oshi: "推し：里維（進擊的巨人）",
+        hobby: "興趣：繪畫、寫作、二創、夢女腦補、收集推圖",
+        slogan: "「夢」是我與推し之間最幸福的小宇宙 💕",
+        warn: "網站內容大多為自我創作與腦內補完，請勿轉載～",
+        gallery_warn: "* 圖片為示意，未來可自行換成自己的創作或收藏 *",
+        dream_title: "標題",
+        dream_date: "日期",
+        dream_mood: "心情",
+        dream_summary: "內容簡述",
+        dream1_title: "初遇里維",
+        dream1_desc: "在夢中巧遇里維隊長，搭話互動，讓我整天都心花怒放！",
+        dream2_title: "夢裡約會",
+        dream2_desc: "和推し一起逛街、吃甜點，被細心溫柔的舉動融化。",
+        dream3_title: "並肩作戰",
+        dream3_desc: "與里維共同對抗巨人，感受到信任與守護的力量！",
+        dreams_hint: "* 可自行新增夢女記事，記錄每段與推し的甜蜜回憶 *",
+        fav_hint: "* 收藏推圖、影片可隨心更換，這裡只是示意 *",
+        contact_p1: "如果想交流夢向心得、繪圖文或合作，歡迎寫信或在社群留言！",
+        contact_hint: "* 以上資訊請自行編輯成你的聯絡方式 *",
+        footer: "&copy; 2025 SAYA | 夢女向個人網站<br>本頁面僅供夢女同好自創、記錄使用，網站內容如有侵權請來信告知。",
+        card_title: "夢女抽卡",
+        draw_card: "抽一張",
+        calendar_title: "簡易日曆",
+        sign_title: "每日打卡",
+        sign: "打卡！"
+      },
+      "en": {
+        // 修正點：補上 draw / top
+        draw: "Draw a Lot",
+        top: "⇧ Back to Top",
+
+        menu: "Menu",
+        about: "About",
+        gallery: "Gallery",
+        dreams: "Dream Log",
+        fav: "Oshi Collection",
+        contact: "Contact",
+        left: "Align Left",
+        center: "Center",
+        right: "Align Right",
+        quote_title: "Dream Quotes",
+        fortune_title: "Today's Fortune",
+        timer_title: "Focus Timer",
+        minute: "min",
+        start: "Start",
+        pause: "Pause",
+        clear: "Clear",
+        main_title: "Levi Dream Girl's Dream Space",
+        main_desc: "Welcome to my dream world! Here I record my stories, writings, art, feelings, and precious time with my oshi.",
+        nick: "Nick: SAYA",
+        oshi: "Oshi: Levi (Attack on Titan)",
+        hobby: "Hobbies: Drawing, writing, fanworks, daydreaming, collecting oshi pics",
+        slogan: "\"Dream\" is my happiest universe with my oshi 💕",
+        warn: "Most content is my own creation or interpretation, please do not repost～",
+        gallery_warn: "* Example images, you can replace with your own art/collection *",
+        dream_title: "Title",
+        dream_date: "Date",
+        dream_mood: "Mood",
+        dream_summary: "Summary",
+        dream1_title: "First Meeting with Levi",
+        dream1_desc: "Met Captain Levi in my dream, chatted and interacted, made my day so sweet!",
+        dream2_title: "Dream Date",
+        dream2_desc: "Went shopping and ate desserts with my oshi. Melted by those gentle acts.",
+        dream3_title: "Fighting Together",
+        dream3_desc: "Fought titans with Levi, felt trust and protection!",
+        dreams_hint: "* You can add your own dream notes, record every sweet memory with your oshi *",
+        fav_hint: "* Collection images/videos can be changed freely, just samples here *",
+        contact_p1: "Want to chat about dreams, drawings, or collab? Email or DM me!",
+        contact_hint: "* Please edit the above to your own contact info *",
+        footer: "&copy; 2025 SAYA | Dream Girl Website<br>This page is for dream-girl self-creation & records only. If any content infringes, please contact me.",
+        card_title: "Dream Girl Gacha",
+        draw_card: "Draw",
+        calendar_title: "Mini Calendar",
+        sign_title: "Daily Check-in",
+        sign: "Check In!"
+      }
+    };
+    function getLang() {
+      return localStorage.getItem("lang") || "zh";
+    }
+    function setLang(lang) {
+      localStorage.setItem("lang", lang);
+    }
+    function applyLang() {
+      const lang = getLang();
+      document.querySelectorAll("[data-i18n]").forEach(el=>{
+        const key = el.getAttribute("data-i18n");
+        if(i18n[lang][key]) {
+          if(el.tagName==="INPUT" && el.type==="button") el.value = i18n[lang][key];
+          else el.innerHTML = i18n[lang][key];
+        }
+      });
+      var pauseBtn = document.getElementById('focusPauseBtn');
+      if (pauseBtn) {
+        if (timerPaused) {
+          pauseBtn.textContent = lang==="en" ? "Resume" : "繼續";
+        } else {
+          pauseBtn.textContent = lang==="en" ? "Pause" : "暫停";
+        }
+      }
+      var clearBtn = document.getElementById('focusClearBtn');
+      if (clearBtn) {
+        clearBtn.textContent = i18n[lang].clear || (lang==="en"?"Clear":"清除");
+      }
+      setRandomQuote();
+      makeCalendar();
+      showSignStatus();
+      if(document.querySelector(".footer")) document.querySelector(".footer").innerHTML = i18n[lang].footer;
+      document.getElementById('langSwitcher').innerText = lang==="zh"?"EN":"中文";
+      // 新增：同步占卜與抽卡內容語言
+      updateFortuneResultLang();
+      updateCardResultLang();
+    }
+    document.getElementById('langSwitcher').addEventListener('click', function(){
+      const cur = getLang();
+      const next = cur==="zh"?"en":"zh";
+      setLang(next);
+      applyLang();
+    });
+    applyLang();
+  </script>
+</body>
+</html>
